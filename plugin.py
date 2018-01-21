@@ -2,8 +2,8 @@
 """
 <plugin key="RFSwitches" name="RFSwitches" author="blauwebuis" version="1.0.0" wikilink="http://www.domoticz.com/wiki/plugins/433switches.html" externallink="https://www.slashdot.org/">
     <params>
-        <param field="Mode1" label="Transmitter data physical pin" width="30px" required="true" default="11"/>
-        <param field="Mode2" label="Receiver data physical pin"    width="30px" required="true" default="13"/>
+        <param field="Mode1" label="Transmitter data GPIO pin" width="30px" required="true" default="17"/>
+        <param field="Mode2" label="Receiver data GPIO pin"    width="30px" required="true" default="27"/>
     </params>
 </plugin>
 """
@@ -13,8 +13,8 @@ from subprocess import call
 class BasePlugin:
 
     def __init__(self):
-        self.txpin = 11
-        self.rxpin = 13
+        self.txpin = 17
+        self.rxpin = 27
         return 
 
     def onStart(self):
