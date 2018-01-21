@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-<plugin key="RFSwitches" name="RFSwitches" author="blauwebuis" version="1.0.0" wikilink="http://www.domoticz.com/wiki/plugins/433switches.html" externallink="https://www.slashdot.org/">
+<plugin key="RFSwitches" name="RFSwitches" author="blauwebuis" version="1.0.0" wikilink="https://www.domoticz.com/wiki/Plugins/RFSwitches" externallink="https://www.domoticz.com/forum/viewtopic.php?f=65&t=21567">
     <params>
         <param field="Mode1" label="Transmitter data GPIO pin" width="30px" required="true" default="17"/>
         <param field="Mode2" label="Receiver data GPIO pin"    width="30px" required="true" default="27"/>
