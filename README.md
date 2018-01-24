@@ -8,6 +8,8 @@ This works great with remote controlled power switches. These use very predictab
 
 If you only use your RFXCom or RFLink to switch this type of device, then this plugin (and 1 euro worth of hardware) may be all you need.
 
+<img src="rf-switches-explanation.jpg">
+
 Detailed installation and usage instruction can be found on the wiki:
 https://www.domoticz.com/wiki/Plugins/RFSwitches
 
