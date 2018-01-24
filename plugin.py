@@ -1,112 +1,128 @@
-#!/usr/bin/env python
 """
 <plugin key="RFSwitches" name="RFSwitches" author="blauwebuis" version="1.0.0" wikilink="https://www.domoticz.com/wiki/Plugins/RFSwitches" externallink="https://www.domoticz.com/forum/viewtopic.php?f=65&t=21567">
-    <params>
-        <param field="Mode1" label="Transmitter data GPIO pin" width="30px" required="true" default="17"/>
-        <param field="Mode2" label="Receiver data GPIO pin"    width="30px" required="true" default="27"/>
-    </params>
+	<description>
+		This plugin creates a new "learning" switch. Everytime you turn it on and off, you create a new RF switch. 
+		When you set this switch to "on", the plugin starts listening for your remote control's commands for 10 seconds. Hold your remote close the the receiver, and press your remote's on button a few times during that period. 
+		Next, turn the learning switch back to off. Now you again have 10 seconds to press the off buton on your RF remote control a few times. 
+		If you refresh the switches page, you will find a new RF switch that has just been created, and that is connected to the two recordings you just made.
+	</description>
+	<params>
+		<param field="Mode1" label="Transmitter data GPIO pin" width="30px" required="true" default="17"/>
+		<param field="Mode2" label="Receiver data GPIO pin"	width="30px" required="true" default="27"/>
+		<button>test</button>
+	</params>
 </plugin>
 """
-import Domoticz
+try:
+	import Domoticz
+except ImportError:
+	import fakeDomoticz as Domoticz
 from subprocess import call
+import platform
+import os
+import subprocess
+import time
+import sys
+
+
 
 class BasePlugin:
 
-    def __init__(self):
-        self.txpin = 17
-        self.rxpin = 27
-        return 
+	def __init__(self):
+		self.platform = platform.system()	
+		self.txpin = 17
+		self.rxpin = 27
+		self.command = ""
+		self.dirName = os.path.dirname(__file__)
+		return 
 
-    def onStart(self):
-        Domoticz.Log("onStart called")
-        Domoticz.Debugging(1)
-        # create the listen-toggle-switch. This controls the making of new RF switches.
-        if 1 not in Devices:
-            Domoticz.Log("Creating the master 433 learn switch. Use if to add new switches.")
-            Domoticz.Device(Name="Learn 433 switch", Unit=1, TypeName="Switch", Image=9, Used=1).Create()
-            #devicecreated.append(deviceparam(3, 0, ""))  # default is Off
+	def onStart(self):
+		Domoticz.Debugging(1)
+		
+		# start the PiGPIO deamon, just is case it hasn't been started yet.
+		command = str("/home/dietpi/domoticz/plugins/RFSwitches/startd.sh")
+		dstarter = os.popen(command).read()
+		
+		# create the listen-toggle-switch. This controls the making of new RF switches.
+		if 1 not in Devices:
+			Domoticz.Log("Creating the master 433 learn switch. Use if to add new switches.")
+			Domoticz.Device(Name="Learn 433 switch", Unit=1, TypeName="Switch", Image=9, Used=1).Create()
+		
+		self.txpin=Parameters["Mode1"]
+		self.rxpin=Parameters["Mode2"]
 
-        #if Devices[1].sValue == "0":
-        #    Domoticz.Log("433 learning switch was OFF at start")
-             
-        #if Devices[1].sValue == "1":    
-        #    Domoticz.Log("433 learning switch was ON at start")
-        
-        self.txpin=Parameters["Mode1"]
-        self.rxpin=Parameters["Mode2"]
+		Domoticz.Log("RFSwitches TX pin = " + str(Parameters["Mode1"]))
+		Domoticz.Log("RFSwitches RX pin = " + str(Parameters["Mode2"]))
+		Domoticz.Log("Python location = " + str(Parameters["Address"]))
+		Domoticz.Log("RF Switches made so far (max 255): " + str(len(Devices)))
+		
+		return
+		
+	def onStop(self):
+		Domoticz.Log("onStop called")
 
-        Domoticz.Log("RFSwitches TX pin = " + str(Parameters["Mode1"]))
-        Domoticz.Log("RFSwitches RX pin = " + str(Parameters["Mode2"]))
-        #Domoticz.Log("Device count: " + str(len(Devices)))
-        return
-        
-    def onStop(self):
-        Domoticz.Log("onStop called")
+	def onConnect(self, Connection, Status, Description):
+		Domoticz.Log("onConnect called")
 
-    def onConnect(self, Connection, Status, Description):
-        Domoticz.Log("onConnect called")
+	def onMessage(self, Connection, Data, Status, Extra):
+		Domoticz.Log("onMessage called")
 
-    def onMessage(self, Connection, Data, Status, Extra):
-        Domoticz.Log("onMessage called")
+	def onCommand(self, Unit, Command, Level, Hue):
+		Domoticz.Log("onCommand called for Unit " + str(Unit) + ": Parameter '" + str(Command) + "', Level: " + str(Level))		
+		
+		#first, let's flip the switch.
+		if str(Command) == "On":
+			Devices[Unit].Update(nValue=1,sValue="On")
+		if str(Command) == "Off":
+			Devices[Unit].Update(nValue=0,sValue="Off")
+		
+		action = "play"
+		recordingName = str(Unit) + str(Command)
+		
+		#If the learner switch was flipped, let's record new codes and create a new switch.
+		if Unit == 1:
+			action = "record"
+			nextDevice = len(Devices) + 1
+			recordingName = str(nextDevice) + str(Command)
+			
+			#When the off button is clicked, we create the new switch.
+			if str(Command) == "Off": 
+				nextName = "New RF switch #" + str(nextDevice)
+				Domoticz.Device(Name=nextName, Unit=nextDevice, TypeName="Switch", Image=9, Used=1).Create()
+				Domoticz.Log("New RF Switch created, #" + str(nextDevice))
+			
+		#command = str(self.dirName) + "/RFSwitches.sh " + str(sys.executable) + " " + str(self.dirName) + "/433cloner.py " + str(self.txpin) + " " + str(self.rxpin) + " " + action + " " + recordingName
+		#Domoticz.Log(str(command))
+		#cloner = os.popen(command).read()
+		
+		callCommand = "sudo " + str(sys.executable) + " " + str(self.dirName) + "/433cloner.py --txpin " + str(self.txpin) + " --rxpin " + str(self.rxpin) + " " + action + " " + recordingName
+		Domoticz.Log(str(callCommand))
+		try:
+			call (callCommand, shell=True)
+		Except:
+			cloner = os.popen(command).read()
 
-    def onCommand(self, Unit, Command, Level, Hue):
-        Domoticz.Log("onCommand called for Unit " + str(Unit) + ": Parameter '" + str(Command) + "', Level: " + str(Level))
-        if Unit == 1:
-            # The user is creating a new RF switch
-            nextDevice = len(Devices) + 1
-            name_on  = str(nextDevice) + "On"
-            name_off = str(nextDevice) + "Off"
-            
-            if str(Command) == "On": 
-                Domoticz.Device(Name="I am a new 433 switch", Unit=nextDevice, TypeName="Switch", Image=9, Used=1).Create()
-                Domoticz.Log("Switch created, now recording ON command")
-                name_on = str(nextDevice) + "On"
-                svalue = 'press on'
-                Devices[Unit].Update(nValue=1,sValue=svalue)
-                call(["python3", "433cloner.py", "--rxpin", str(self.rxpin), "record", name_on])
-                
-                
-            if str(Command) == "Off":
-                Domoticz.Log("Now recording OFF command") 
-                svalue = "press off"
-                Devices[Unit].Update(nValue=0,sValue=svalue)
-                call(["python3", "433cloner.py", "--rxpin", str(self.rxpin), "record", name_off])
-                
-        else:
-            # The user is using an existing RF switch
-            if str(Command) == "On":
-                svalue = 'on'
-                Devices[Unit].Update(nValue=1,sValue=svalue)
-            
-            if str(Command) == "Off":
-                svalue = "off" 
-                Devices[Unit].Update(nValue=0,sValue=svalue)          
-            
-            recordingName = str(Unit) + str(Command)
-            Domoticz.Log("playing back RF recording: " + recordingName)
-            call(["python3", "433cloner.py", "--txpin", str(self.txpin), "play", recordingName])
-                
-    def onHeartbeat(self):
-        x = 1
-        
+	def onHeartbeat(self):
+		pass
+
+
 global _plugin
 _plugin = BasePlugin()
 
-
 def onStart():
-    global _plugin
-    _plugin.onStart()
+	global _plugin
+	_plugin.onStart()
 
 def onStop():
-    global _plugin
-    _plugin.onStop()
+	global _plugin
+	_plugin.onStop()
 
 def onCommand(Unit, Command, Level, Hue):
-    global _plugin
-    _plugin.onCommand(Unit, Command, Level, Hue)
+	global _plugin
+	_plugin.onCommand(Unit, Command, Level, Hue)
 
-#def onHeartbeat():
-#    global _plugin 
-#    _plugin.onHeartbeat()
-
-
+def onHeartbeat():
+	#pass
+	global _plugin 
+	_plugin.onHeartbeat()
+	
