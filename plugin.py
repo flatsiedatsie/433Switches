@@ -39,10 +39,6 @@ class BasePlugin:
 	def onStart(self):
 		Domoticz.Debugging(1)
 		
-		# start the PiGPIO deamon, just is case it hasn't been started yet.
-		command = str("/home/dietpi/domoticz/plugins/RFSwitches/startd.sh")
-		dstarter = os.popen(command).read()
-		
 		# create the listen-toggle-switch. This controls the making of new RF switches.
 		if 1 not in Devices:
 			Domoticz.Log("Creating the master 433 learn switch. Use if to add new switches.")
@@ -53,9 +49,18 @@ class BasePlugin:
 
 		Domoticz.Log("RFSwitches TX pin = " + str(Parameters["Mode1"]))
 		Domoticz.Log("RFSwitches RX pin = " + str(Parameters["Mode2"]))
-		Domoticz.Log("Python location = " + str(Parameters["Address"]))
 		Domoticz.Log("RF Switches made so far (max 255): " + str(len(Devices)))
 		
+		# start the PiGPIO deamon, just is case it hasn't been started yet.
+		#command = str("/home/dietpi/domoticz/plugins/RFSwitches/startd.sh")
+		#dstarter = os.popen(command).read()
+		
+		startCommand = "sudo pigpiod"
+		Domoticz.Log(str(startCommand))
+		try:
+			call (startCommand, shell=True)
+		except:
+			cloner = os.popen(startCommand).read()
 		return
 		
 	def onStop(self):
@@ -90,17 +95,13 @@ class BasePlugin:
 				nextName = "New RF switch #" + str(nextDevice)
 				Domoticz.Device(Name=nextName, Unit=nextDevice, TypeName="Switch", Image=9, Used=1).Create()
 				Domoticz.Log("New RF Switch created, #" + str(nextDevice))
-			
-		#command = str(self.dirName) + "/RFSwitches.sh " + str(sys.executable) + " " + str(self.dirName) + "/433cloner.py " + str(self.txpin) + " " + str(self.rxpin) + " " + action + " " + recordingName
-		#Domoticz.Log(str(command))
-		#cloner = os.popen(command).read()
 		
 		callCommand = "sudo " + str(sys.executable) + " " + str(self.dirName) + "/433cloner.py --txpin " + str(self.txpin) + " --rxpin " + str(self.rxpin) + " " + action + " " + recordingName
 		Domoticz.Log(str(callCommand))
 		try:
 			call (callCommand, shell=True)
 		except:
-			cloner = os.popen(command).read()
+			cloner = os.popen(callCommand).read()
 
 	def onHeartbeat(self):
 		pass
