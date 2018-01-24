@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 '''
 
 This code is a mix of two things:
@@ -71,12 +70,10 @@ class rfrx():
 		self.name = name
 		self.pi = pi
 		self.gpio = gpio
-		#print(str(self.gpio))
 		self.cb = callback
 		self.min_bits = min_bits
 		self.max_bits = max_bits
 		self.glitch = glitch
-		#print(glitch)
 
 		self._in_code = False
 		self._edge = 0
@@ -87,8 +84,6 @@ class rfrx():
 
 		pi.set_mode(gpio, pigpio.INPUT)
 		pi.set_glitch_filter(gpio, glitch)
-
-		#print(pi)
 		
 		self._last_edge_tick = pi.get_current_tick()
 		self._cb = pi.callback(gpio, pigpio.EITHER_EDGE, self._cbf)
@@ -153,14 +148,11 @@ class rfrx():
 
 		if	( (self._min_0 < e0 < self._max_0) and
 				 (self._min_1 < e1 < self._max_1) ):
-			#print("short long")
 			return 0
 		elif ( (self._min_0 < e1 < self._max_0) and
 				 (self._min_1 < e0 < self._max_1) ):
-			#print("long short")
 			return 1
 		else:
-			#print("illegal sequence")
 			return 2
 
 
@@ -170,11 +162,10 @@ class rfrx():
 		The code end is assumed when an edge greater than 5 ms
 		is detected.
 		"""
-		#print("edge");
 		edge_len = pigpio.tickDiff(self._last_edge_tick, t)
 		self._last_edge_tick = t
 
-		if edge_len > 3000: # 5000 us, 5 ms.
+		if edge_len > 3000: # 5000 us, 5 ms. # this could be made into a variable in the interface.
 
 			if self._in_code:
 				if self.min_bits <= self._bits <= self.max_bits:
@@ -219,7 +210,6 @@ class rfrx():
 		"""
 		Returns True if a new code is ready.
 		"""
-		#print("code ready")
 		return self._ready
 
 	def code(self):
@@ -380,15 +370,10 @@ def exithandler(signal, frame):
 
 
 def play(args, database):
-	#print("using GPIO pin:")
-	#print(args.txpin)
-	#print(args.recordingName)
 	recording = str(args.recordingName[0])
-	#database = shelve.open("DomoticzRFSwitchesDatabase")
 	
 	pin = int(args.txpin)
 	
-	#print("playing: " + recording)
 	repeats = 6;
 	code = int(database[recording][0])
 	bits = int(database[recording][1])
@@ -396,45 +381,31 @@ def play(args, database):
 	t0 = int(database[recording][3])
 	t1 = int(database[recording][4])
 	
-	#print(str(code))
-	#print(bits)
-	#print(gap)
-	#print(t0)
-	#print(t1)
 	pi = pigpio.pi()
 	tx=rftx(pi, gpio=17, repeats=6, bits=bits, gap=gap, t0=t0, t1=t1)
-	#try:
 	tx.send(code)
-	#time.sleep(1)
-	#tx.cancel()
-	#except:
-	#print("playing failed, unable to transmit")
-	#tx.cancel() # Cancel the transmitter.
 	pi.stop() # Disconnect from local Pi.
-	#sys.exit(12)
+
 
 
 def rx_callback(name, code, bits, gap, t0, t1):
 	global bitLengthFound
-	#print(args.recordingName)
-	#recording = str(args.recordingName)
 	recording = str(name)
-	#print("code={} bits={} (gap={} t0={} t1={})" . format(code, bits, gap, t0, t1))
 	if(bits > bitLengthFound): #try to get as long as possible of a code
 		print("saving longer bitlength code")
 		database[recording] = [str(code), str(bits), str(gap), str(t0), str(t1)]
 		bitLengthFound = bits
+		try:
+			import urllib.request
+			urllib.request.urlopen("http://127.0.0.1:8080/json.htm?type=command&param=sendnotification&subject=RF code found&body=The RFSwitches plugin found a code while listening. Press a few more times for the best result.").read()
+		except:
+			pass
 
-
-def record(args, database):	
-	#try:
+def record(args, database):
 	pi = pigpio.pi()
-	print("yoyo")
-	print(str(args.recordingName))
 	rx=rfrx(pi, name=args.recordingName, gpio=args.rxpin, callback=rx_callback)
-	time.sleep(5)
+	time.sleep(6)
 	pi.stop()
-	sys.exit(13)
 
 
 def dump(args, database):
@@ -456,8 +427,6 @@ def main():
 
 	parser.add_argument('--txpin', type=int, default=17, help=('The RPi GPIO pin where the RF transmitter is attached (default:17)'))
 
-	#parser.add_argument('-b', '--databasedb', dest='databasedb', default=os.path.join(os.environ['HOME'], 'RFSwitches.db'))
-
 	# Record subcommand
 	parser_record = subparsers.add_parser('record', help='Record an RF signal')
 	parser_record.add_argument('recordingName')
@@ -469,7 +438,7 @@ def main():
 	parser_play.set_defaults(func=play)
 
 	# Dump subcommand
-	parser_dump = subparsers.add_parser('dump', help=('Dumps the already recorded RF signals'))
+	parser_dump = subparsers.add_parser('dump', help=('shows a list of the already recorded RF signals'))
 	parser_dump.set_defaults(func=dump)
 
 	args = parser.parse_args()
@@ -480,8 +449,6 @@ def main():
 	args.func(args, database)
 	database.close()
 	print("done")
-	#pi.stop() # Disconnect from local Pi.
-
 	sys.exit(0)
 
 if __name__ == '__main__':

@@ -99,7 +99,7 @@ class BasePlugin:
 		Domoticz.Log(str(callCommand))
 		try:
 			call (callCommand, shell=True)
-		Except:
+		except:
 			cloner = os.popen(command).read()
 
 	def onHeartbeat(self):
