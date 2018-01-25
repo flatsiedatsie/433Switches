@@ -9,7 +9,6 @@
 	<params>
 		<param field="Mode1" label="Transmitter data GPIO pin" width="30px" required="true" default="17"/>
 		<param field="Mode2" label="Receiver data GPIO pin"	width="30px" required="true" default="27"/>
-		<button>test</button>
 	</params>
 </plugin>
 """
