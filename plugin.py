@@ -17,9 +17,9 @@ try:
 except ImportError:
 	import fakeDomoticz as Domoticz
 from subprocess import call
-import platform
+#import platform
 import os
-import subprocess
+#import subprocess
 import time
 import sys
 
@@ -28,7 +28,7 @@ import sys
 class BasePlugin:
 
 	def __init__(self):
-		self.platform = platform.system()	
+		#self.platform = platform.system()	
 		self.txpin = 17
 		self.rxpin = 27
 		self.command = ""
@@ -36,7 +36,7 @@ class BasePlugin:
 		return 
 
 	def onStart(self):
-		Domoticz.Debugging(1)
+		#Domoticz.Debugging(1)
 		
 		# create the listen-toggle-switch. This controls the making of new RF switches.
 		if 1 not in Devices:
