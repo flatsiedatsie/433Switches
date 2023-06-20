@@ -443,7 +443,7 @@ def main():
 
 	args = parser.parse_args()
 
-	databaseFile=os.path.join(os.environ['HOME'],'RFSwitches3')
+	databaseFile=os.path.join(os.environ['HOME'],'RFSwitches3.db')
 	global database
 	database = shelve.open(databaseFile)
 	args.func(args, database)
