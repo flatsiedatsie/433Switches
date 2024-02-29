@@ -15,3 +15,11 @@ https://www.domoticz.com/wiki/Plugins/RFSwitches
 
 Discussion can be found on the Domoticz forum:
 https://www.domoticz.com/forum/viewtopic.php?f=65&t=21567
+
+# Setup
+sudo apt-get -y install git pigpio python-pigpio python3-pigpio
+
+git clone https://github.com/8cH9azbsFifZ/433Switches.git
+
+sudo pigpiod
+python ./433cloner.py  record test
